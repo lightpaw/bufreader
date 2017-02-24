@@ -9,7 +9,7 @@ func TestBufReader(t *testing.T) {
 	RegisterTestingT(t)
 	r := &numReader{}
 
-	bufReader := NewBufReader(r, 10)
+	bufReader := NewReader(r, 10)
 
 	buf, err := bufReader.ReadFull(5)
 
@@ -31,7 +31,7 @@ func TestBufReader_ReadByte(t *testing.T) {
 	RegisterTestingT(t)
 	r := &numReader{}
 
-	bufReader := NewBufReader(r, 0)
+	bufReader := NewReader(r, 0)
 
 	Ω(bufReader.buf).Should(HaveCap(128))
 	Ω(bufReader.buf).Should(HaveLen(128))
@@ -47,7 +47,7 @@ func TestBufReader_CleanUp(t *testing.T) {
 	RegisterTestingT(t)
 	r := &numReader{}
 
-	bufReader := NewBufReader(r, 0)
+	bufReader := NewReader(r, 0)
 	bufReader.readAtLeast(100)
 	bufReader.Close()
 	Ω(bufReader.unreadBytes()).Should(Equal(0))

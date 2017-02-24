@@ -12,10 +12,10 @@ import (
 var (
 	slabPool                  = slab.NewSyncPool(128, 4096, 2)
 	zeroBuf                   = make([]byte, 0)
-	ErrBufReaderAlreadyClosed = errors.New("bufreader.BufReader already closed")
+	ErrBufReaderAlreadyClosed = errors.New("bufreader.Reader already closed")
 )
 
-type BufReader struct {
+type Reader struct {
 	reader    io.Reader
 	buf       []byte
 	w         int
@@ -23,11 +23,11 @@ type BufReader struct {
 	cleanedUp int32
 }
 
-func NewBufReader(r io.Reader, initialSize int) *BufReader {
-	return &BufReader{reader: r, buf: slabPool.Alloc(initialSize)}
+func NewReader(r io.Reader, initialSize int) *Reader {
+	return &Reader{reader: r, buf: slabPool.Alloc(initialSize)}
 }
 
-func (r *BufReader) ReadByte() (n byte, err error) {
+func (r *Reader) ReadByte() (n byte, err error) {
 	if r.unreadBytes() > 0 {
 		n = r.buf[r.r]
 		r.r++
@@ -53,7 +53,7 @@ func (r *BufReader) ReadByte() (n byte, err error) {
 }
 
 // return a slice with exactly n bytes. It's safe to use the result slice before the next call to any Read method.
-func (r *BufReader) ReadFull(n int) ([]byte, error) {
+func (r *Reader) ReadFull(n int) ([]byte, error) {
 	unreadBytes := r.unreadBytes()
 	if unreadBytes >= n {
 		result := r.buf[r.r : r.r+n]
@@ -102,7 +102,7 @@ func (r *BufReader) ReadFull(n int) ([]byte, error) {
 	return result, nil
 }
 
-func (r *BufReader) readAtLeast(bytes int) error {
+func (r *Reader) readAtLeast(bytes int) error {
 	if n, err := io.ReadAtLeast(r.reader, r.buf[r.w:], bytes); err != nil {
 		return err
 	} else {
@@ -111,15 +111,15 @@ func (r *BufReader) readAtLeast(bytes int) error {
 	}
 }
 
-func (r *BufReader) unreadBytes() int {
+func (r *Reader) unreadBytes() int {
 	return r.w - r.r
 }
 
-func (r *BufReader) capLeft() int {
+func (r *Reader) capLeft() int {
 	return len(r.buf) - r.w
 }
 
-func (r *BufReader) Close() error {
+func (r *Reader) Close() error {
 	if atomic.CompareAndSwapInt32(&r.cleanedUp, 0, 1) {
 		slabPool.Free(r.buf)
 		r.w, r.r = 0, 0
