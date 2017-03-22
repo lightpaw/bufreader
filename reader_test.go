@@ -31,9 +31,8 @@ func TestBufReader_ReadByte(t *testing.T) {
 	RegisterTestingT(t)
 	r := &numReader{}
 
-	bufReader := NewReader(r, 0)
+	bufReader := NewReader(r, 128)
 
-	Ω(bufReader.buf).Should(HaveCap(128))
 	Ω(bufReader.buf).Should(HaveLen(128))
 
 	for i := 0; i < 999999; i++ {

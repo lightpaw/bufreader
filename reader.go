@@ -6,12 +6,10 @@ import (
 	"errors"
 	"github.com/lightpaw/slab"
 	"io"
-	"sync/atomic"
 )
 
 var (
 	slabPool                  = slab.NewSyncPool(128, 4096, 2)
-	zeroBuf                   = make([]byte, 0)
 	ErrBufReaderAlreadyClosed = errors.New("bufreader.Reader already closed")
 )
 
@@ -20,7 +18,7 @@ type Reader struct {
 	buf       []byte
 	w         int
 	r         int
-	cleanedUp int32
+	cleanedUp bool
 }
 
 func NewReader(r io.Reader, initialSize int) *Reader {
@@ -35,7 +33,7 @@ func (r *Reader) ReadByte() (n byte, err error) {
 	}
 
 	if r.capLeft() == 0 {
-		if cap(r.buf) == 0 {
+		if r.cleanedUp {
 			return 0, ErrBufReaderAlreadyClosed
 		}
 
@@ -120,11 +118,12 @@ func (r *Reader) capLeft() int {
 }
 
 func (r *Reader) Close() error {
-	if atomic.CompareAndSwapInt32(&r.cleanedUp, 0, 1) {
-		slabPool.Free(r.buf)
-		r.w, r.r = 0, 0
-		r.buf = zeroBuf
-		return nil
+	if r.cleanedUp {
+		return ErrBufReaderAlreadyClosed
 	}
-	return ErrBufReaderAlreadyClosed
+	r.cleanedUp = true
+	slabPool.Free(r.buf)
+	r.w, r.r = 0, 0
+	r.buf = nil
+	return nil
 }
