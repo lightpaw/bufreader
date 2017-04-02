@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	slabPool                  = slab.NewSyncPool(128, 4096, 2)
+	slabPool                  = slab.NewSyncPool(128, 32768, 2)
 	ErrBufReaderAlreadyClosed = errors.New("bufreader.Reader already closed")
 )
 
@@ -22,7 +22,8 @@ type Reader struct {
 }
 
 func NewReader(r io.Reader, initialSize int) *Reader {
-	return &Reader{reader: r, buf: slabPool.Alloc(initialSize)}
+	buf := slabPool.Alloc(initialSize)
+	return &Reader{reader: r, buf: buf}
 }
 
 func (r *Reader) ReadByte() (n byte, err error) {
@@ -90,8 +91,7 @@ func (r *Reader) ReadFull(n int) ([]byte, error) {
 		r.r = 0
 	}
 
-	err := r.readAtLeast(needToRead)
-	if err != nil {
+	if err := r.readAtLeast(needToRead); err != nil{
 		return nil, err
 	}
 
