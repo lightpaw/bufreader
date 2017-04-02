@@ -91,7 +91,7 @@ func (r *Reader) ReadFull(n int) ([]byte, error) {
 		r.r = 0
 	}
 
-	if err := r.readAtLeast(needToRead); err != nil{
+	if err := r.readAtLeast(needToRead); err != nil {
 		return nil, err
 	}
 
